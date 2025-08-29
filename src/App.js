@@ -172,8 +172,8 @@ export default function App() {
             outerRadius={80}
             label
           >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index]} />
+            {chartData.map((entry) => (
+              <Cell key={entry.name} fill={COLORS[chartData.indexOf(entry)]} />
             ))}
           </Pie>
           <ChartTooltip />
@@ -217,10 +217,11 @@ export default function App() {
               renderItem={(item) => (
                 <List.Item
                   actions={[
-                    <Button type="link" onClick={() => openEditModal(item)}>
+                    <Button key="edit" type="link" onClick={() => openEditModal(item)}>
                       Edit
                     </Button>,
                     <Button
+                      key="delete"
                       type="link"
                       danger
                       onClick={() => dispatch(deleteTask(item.id))}
@@ -277,9 +278,10 @@ export default function App() {
         >
           {({ values, setFieldValue }) => (
             <Form>
-              <label>Title</label>
+              <label htmlFor="title">Title</label>
               <Field
                 name="title"
+                id="title"
                 as={Input}
                 style={{ marginBottom: 10 }}
                 placeholder="Enter title"
@@ -290,16 +292,18 @@ export default function App() {
                 style={{ color: "red", marginBottom: 10 }}
               />
 
-              <label>Description</label>
+              <label htmlFor="description">Description</label>
               <Field
                 name="description"
+                id="description"
                 as={Input.TextArea}
                 style={{ marginBottom: 10 }}
                 placeholder="Enter description"
               />
 
-              <label>Category</label>
+              <label htmlFor="category">Category</label>
               <Select
+                id="category"
                 value={values.category}
                 onChange={(value) => setFieldValue("category", value)}
                 style={{ width: "100%", marginBottom: 10 }}
@@ -316,8 +320,9 @@ export default function App() {
                 style={{ color: "red", marginBottom: 10 }}
               />
 
-              <label>Date</label>
+              <label htmlFor="date">Date</label>
               <DatePicker
+                id="date"
                 value={dayjs(values.date)}
                 onChange={(date) =>
                   setFieldValue("date", date.format("YYYY-MM-DD"))
