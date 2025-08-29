@@ -51,11 +51,16 @@ export default function App() {
   const [appliedFilter, setAppliedFilter] = useState("");
 
 
-  const filteredTasks = tasks.filter(
-    (t) =>
-      t.date === selectedDate.format("YYYY-MM-DD") &&
-      (!appliedFilter || t.category === appliedFilter)
-  );
+  const filteredTasks = React.useMemo(() => {
+    if (!tasks || !Array.isArray(tasks) || !selectedDate) {
+      return [];
+    }
+    return tasks.filter(
+      (t) =>
+        t.date === selectedDate.format("YYYY-MM-DD") &&
+        (!appliedFilter || t.category === appliedFilter)
+    );
+  }, [tasks, selectedDate, appliedFilter]);
 
   const chartData = Object.keys(categories).map((cat) => ({
     name: cat,
@@ -68,7 +73,7 @@ export default function App() {
       title: "",
       description: "",
       category: "",
-      date: date.format("YYYY-MM-DD"),
+      date: date?.format("YYYY-MM-DD") || "2025-08-29",
     });
     setIsEditing(false);
     setIsModalOpen(true);
@@ -183,11 +188,11 @@ export default function App() {
           <Calendar
             fullscreen={false}
             onSelect={(date) => setSelectedDate(date)}
-            dateCellRender={dateCellRender}
+            cellRender={dateCellRender}
           />
 
           <Title level={4} style={{ marginTop: 20 }}>
-            Tasks for {selectedDate.format("DD MMM YYYY")}
+            Tasks for {selectedDate?.format("DD MMM YYYY") || "Selected Date"}
           </Title>
 
           {filteredTasks.length > 0 ? (
@@ -197,13 +202,14 @@ export default function App() {
               renderItem={(item) => (
                 <List.Item
                   actions={[
-                    <Button type="link" onClick={() => openEditModal(item)}>
+                    <Button type="link" onClick={() => openEditModal(item)} key="edit">
                       Edit
                     </Button>,
                     <Button
                       type="link"
                       danger
                       onClick={() => deleteTask(item.id)}
+                      key="delete"
                     >
                       Delete
                     </Button>,
@@ -242,7 +248,7 @@ export default function App() {
             category: isEditing ? formData.category : "",
             date: isEditing
               ? formData.date
-              : selectedDate.format("YYYY-MM-DD"),
+              : selectedDate?.format("YYYY-MM-DD") || "2025-08-29",
           }}
           validationSchema={validationSchema}
           onSubmit={(values, { resetForm }) => {
