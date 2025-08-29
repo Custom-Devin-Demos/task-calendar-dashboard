@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Layout,
   Calendar,
@@ -14,9 +14,7 @@ import {
   Tag,
   Tooltip,
 } from "antd";
-import { useSelector, useDispatch } from "react-redux";
-import { addTask, editTask, deleteTask, setTasks } from "./redux/tasksSlice";
-import { nanoid } from "@reduxjs/toolkit";
+import { useTasksStore } from "./stores/tasksStore";
 import dayjs from "dayjs";
 import { PieChart, Pie, Cell, Tooltip as ChartTooltip, Legend } from "recharts";
 import { Formik, Form, Field, ErrorMessage } from "formik";
@@ -41,8 +39,7 @@ const validationSchema = Yup.object({
 });
 
 export default function App() {
-  const tasks = useSelector((state) => state.tasks);
-  const dispatch = useDispatch();
+  const { tasks, addTask, editTask, deleteTask } = useTasksStore();
 
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,29 +50,17 @@ export default function App() {
   const [tempFilter, setTempFilter] = useState("");
   const [appliedFilter, setAppliedFilter] = useState("");
 
-  // Load from localStorage once
-  useEffect(() => {
-    const saved = localStorage.getItem("tasks");
-    if (saved) {
-      let parsed = JSON.parse(saved).map((task) => ({
-        ...task,
-        id: task.id || nanoid(),
-      }));
-      dispatch(setTasks(parsed));
-      localStorage.setItem("tasks", JSON.stringify(parsed));
+
+  const filteredTasks = React.useMemo(() => {
+    if (!tasks || !Array.isArray(tasks) || !selectedDate) {
+      return [];
     }
-  }, [dispatch]);
-
-  // Save Redux → localStorage
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
-
-  const filteredTasks = tasks.filter(
-    (t) =>
-      t.date === selectedDate.format("YYYY-MM-DD") &&
-      (!appliedFilter || t.category === appliedFilter)
-  );
+    return tasks.filter(
+      (t) =>
+        t.date === selectedDate.format("YYYY-MM-DD") &&
+        (!appliedFilter || t.category === appliedFilter)
+    );
+  }, [tasks, selectedDate, appliedFilter]);
 
   const chartData = Object.keys(categories).map((cat) => ({
     name: cat,
@@ -88,7 +73,7 @@ export default function App() {
       title: "",
       description: "",
       category: "",
-      date: date.format("YYYY-MM-DD"),
+      date: date?.format("YYYY-MM-DD") || "2025-08-29",
     });
     setIsEditing(false);
     setIsModalOpen(true);
@@ -203,11 +188,11 @@ export default function App() {
           <Calendar
             fullscreen={false}
             onSelect={(date) => setSelectedDate(date)}
-            dateCellRender={dateCellRender}
+            cellRender={dateCellRender}
           />
 
           <Title level={4} style={{ marginTop: 20 }}>
-            Tasks for {selectedDate.format("DD MMM YYYY")}
+            Tasks for {selectedDate?.format("DD MMM YYYY") || "Selected Date"}
           </Title>
 
           {filteredTasks.length > 0 ? (
@@ -217,13 +202,14 @@ export default function App() {
               renderItem={(item) => (
                 <List.Item
                   actions={[
-                    <Button type="link" onClick={() => openEditModal(item)}>
+                    <Button type="link" onClick={() => openEditModal(item)} key="edit">
                       Edit
                     </Button>,
                     <Button
                       type="link"
                       danger
-                      onClick={() => dispatch(deleteTask(item.id))}
+                      onClick={() => deleteTask(item.id)}
+                      key="delete"
                     >
                       Delete
                     </Button>,
@@ -262,14 +248,14 @@ export default function App() {
             category: isEditing ? formData.category : "",
             date: isEditing
               ? formData.date
-              : selectedDate.format("YYYY-MM-DD"),
+              : selectedDate?.format("YYYY-MM-DD") || "2025-08-29",
           }}
           validationSchema={validationSchema}
           onSubmit={(values, { resetForm }) => {
             if (isEditing) {
-              dispatch(editTask({ ...values, id: editId }));
+              editTask({ ...values, id: editId });
             } else {
-              dispatch(addTask(values));
+              addTask(values);
             }
             resetForm();
             setIsModalOpen(false);
